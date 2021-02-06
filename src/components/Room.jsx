@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { database } from '../firebase';
-import { parseURLtoYoutubeID } from '../utils/helpers';
+import Queue from './Queue';
 
 const Room = () => {
   const [roomObj, setRoomObj] = useState({});
-  const [inputValue, setInputValue] = useState('');
   const url = useParams();
   const ref = database.ref(`/rooms/${url.id}`);
 
@@ -50,13 +49,6 @@ const Room = () => {
       player.loadVideoById(snap.val());
     });
   }
-  function onVideoCue() {
-    const id = parseURLtoYoutubeID(inputValue);
-    window.player.loadVideoById(id);
-    ref.update({
-      videoId: id,
-    });
-  }
 
   const loadVideo = () => {
     window.player = new window.YT.Player(`player`, {
@@ -98,11 +90,8 @@ const Room = () => {
     <div>
       <h1>{roomObj.name}</h1>
       <div id="player"></div>
-      <input
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-      />
-      <button onClick={onVideoCue}>test</button>
+
+      <Queue id={url.id} />
     </div>
   );
 };
