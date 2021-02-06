@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { database } from '../firebase';
 import { getTitle, parseURLtoYoutubeID } from '../utils/helpers';
-
+import { RoomContext } from './Room';
 const Container = styled.div`
   width: 300px;
 `;
@@ -20,19 +20,19 @@ const Item = styled.div`
   }
 `;
 
-export default function Queue({ id }) {
+export default function Queue() {
   const [videoIdList, setVideoIdList] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState('');
+  const { id } = useContext(RoomContext);
 
   function playNextVideo() {
-    const nextVideoId = Object.entries(videoIdList)[0][1].videoId;
-    const queueKey = Object.entries(videoIdList)[0][0];
-
-    window.player.loadVideoById(nextVideoId);
+    const [queueKey, nextVideo] = Object.entries(videoIdList)[0];
+    const { videoId } = nextVideo;
+    window.player.loadVideoById(videoId);
 
     database.ref(`/rooms/${id}`).update({
-      videoId: nextVideoId,
+      videoId,
     });
     database.ref(`/rooms/${id}/queue/${queueKey}`).remove();
   }
@@ -70,10 +70,10 @@ export default function Queue({ id }) {
       <button onClick={addToQueue}>Add to queue</button>
       <button onClick={playNextVideo}>Next</button>
       {videoIdList &&
-        Object.entries(videoIdList).map((item) => {
+        Object.entries(videoIdList).map((item, i) => {
           const { title, videoId, thumbnail } = item[1];
           return (
-            <Item key={videoId}>
+            <Item key={videoId + i}>
               <span>{title}</span>
               <img src={thumbnail} alt="thumbnail" />
             </Item>

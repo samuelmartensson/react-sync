@@ -1,97 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, createContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { database } from '../firebase';
-import Queue from './Queue';
+import Player from './Player';
+
+export const RoomContext = createContext();
 
 const Room = () => {
-  const [roomObj, setRoomObj] = useState({});
+  const [name, setName] = useState('');
+  const [userId, setUserId] = useState(null);
+  const [error, setError] = useState('');
+  const [validate, setValidate] = useState(false);
   const url = useParams();
-  const ref = database.ref(`/rooms/${url.id}`);
 
-  useEffect(() => {
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-
-      window.onYouTubeIframeAPIReady = loadVideo;
-
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  function joinRoom() {
+    if (name.trim().length > 2) {
+      setValidate(true);
+      const userRef = database.ref(`/rooms/${url.id}/users`).push({ name });
+      setUserId(userRef.key);
     } else {
-      loadVideo();
-    }
-    // eslint-disable-next-line
-  }, []);
-
-  useEffect(() => {
-    database
-      .ref(`/rooms/${url.id}`)
-      .once('value', (snap) => setRoomObj(snap.val()));
-  }, [url.id]);
-
-  function onPlayPause(player) {
-    database.ref(`rooms/${url.id}/state`).on('value', (snap) => {
-      const state = snap.val();
-      if (state === 1) {
-        player.pauseVideo();
-      } else if (state === 0) {
-        player.playVideo();
-      }
-    });
-  }
-  function onTimestampChange(player) {
-    database.ref(`rooms/${url.id}/timestamp`).on('value', (snap) => {
-      player.seekTo(snap.val());
-    });
-  }
-  function onVideoChange(player) {
-    database.ref(`rooms/${url.id}/videoId`).on('value', (snap) => {
-      player.loadVideoById(snap.val());
-    });
-  }
-
-  const loadVideo = () => {
-    window.player = new window.YT.Player(`player`, {
-      // Get video ID from database
-      videoId: 'xfdue4jdow0',
-      events: {
-        onReady: onPlayerReady,
-        onStateChange: onPlayerStateChange,
-      },
-    });
-  };
-
-  function onPlayerStateChange(event) {
-    if (event.data === window.YT.PlayerState.PAUSED) {
-      ref.update({
-        state: 1,
-        timestamp: event.target.getCurrentTime(),
-      });
-    }
-    if (event.data === window.YT.PlayerState.PLAYING) {
-      ref.update({
-        state: 0,
-      });
-    }
-    if (event.data === window.YT.PlayerState.BUFFERING) {
-      ref.update({
-        timestamp: event.target.getCurrentTime(),
-      });
+      setError('Name must be 3 or more characters');
     }
   }
-
-  const onPlayerReady = (event) => {
-    onPlayPause(event.target);
-    onVideoChange(event.target);
-    onTimestampChange(event.target);
-  };
 
   return (
     <div>
-      <h1>{roomObj.name}</h1>
-      <div id="player"></div>
-
-      <Queue id={url.id} />
+      {!validate ? (
+        <>
+          <input value={name} onChange={(e) => setName(e.target.value)} />
+          <button onClick={joinRoom}>Join</button>
+          <div>{error && error}</div>
+        </>
+      ) : (
+        <RoomContext.Provider value={{ id: url.id, name, userId }}>
+          <Player name={name} id={url.id} />
+        </RoomContext.Provider>
+      )}
     </div>
   );
 };
