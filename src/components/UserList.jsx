@@ -4,14 +4,30 @@ import { RoomContext } from './Room';
 
 export default function UserList() {
   const [userList, setUserList] = useState([]);
-  const { id, name, userId } = useContext(RoomContext);
+  const { id, userId } = useContext(RoomContext);
+
+  const userLength = userList && Object.entries(userList).length;
 
   useEffect(() => {
+    let count = 0;
     database.ref(`/rooms/${id}/users`).on('value', (snap) => {
       setUserList(snap.val());
+      count = snap.numChildren();
+
+      if (snap.numChildren() > 1) {
+        database.ref(`/rooms/${id}/users/${userId}`).onDisconnect().set({});
+      } else {
+        database.ref(`/rooms/${id}`).onDisconnect().set({});
+      }
     });
-    database.ref(`/rooms/${id}/users/${userId}`).onDisconnect().remove();
-  }, [id, userId]);
+
+    return () => {
+      if (count > 1) {
+        database.ref(`/rooms/${id}`).onDisconnect().cancel();
+      }
+      database.ref(`/rooms/${id}/users`).off('value');
+    };
+  }, [id, userId, userLength]);
 
   return (
     <div>

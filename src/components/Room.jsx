@@ -31,8 +31,8 @@ const Room = () => {
           <div>{error && error}</div>
         </>
       ) : (
-        <RoomContext.Provider value={{ id: url.id, name, userId }}>
-          <Player name={name} id={url.id} />
+        <RoomContext.Provider value={{ id: url.id, userId }}>
+          <Player id={url.id} />
         </RoomContext.Provider>
       )}
     </div>

@@ -3,7 +3,7 @@ import { database } from '../firebase';
 import Queue from './Queue';
 import UserList from './UserList';
 
-export default function Player({ id, name }) {
+export default function Player({ id }) {
   const ref = database.ref(`/rooms/${id}`);
   const [roomObj, setRoomObj] = useState({});
 
