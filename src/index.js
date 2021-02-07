@@ -7,7 +7,7 @@ import { BrowserRouter, Switch } from 'react-router-dom';
 
 ReactDOM.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/synced">
       <Switch>
         <App />
       </Switch>

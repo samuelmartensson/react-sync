@@ -17,7 +17,7 @@ const Room = () => {
     // Redirect to homepage if room does not exist
     database.ref(`/rooms/${url.id}/name`).once('value', (snap) => {
       if (!snap.exists()) {
-        history.push('/');
+        history.push(`/`);
       }
     });
   }, [history, url.id]);

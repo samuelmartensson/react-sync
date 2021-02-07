@@ -1,5 +1,6 @@
 {
   "name": "exam",
+  "homepage": "https://samuelmartensson.se/synced/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
