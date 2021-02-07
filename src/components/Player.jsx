@@ -2,10 +2,35 @@ import React, { useEffect, useState } from 'react';
 import { database } from '../firebase';
 import Queue from './Queue';
 import UserList from './UserList';
+import styled from 'styled-components';
 
+const Iframe = styled.div`
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9, for an aspect ratio of 1:1 change to this value to 100% */
+  iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+`;
+const MainContainer = styled.div``;
+const Wrapper = styled.div`
+  width: 100%;
+  @media (min-width: 1200px) {
+    width: 80%;
+  }
+`;
+const Flexbox = styled.div`
+  padding-bottom: 1rem;
+  @media (min-width: 1200px) {
+    display: flex;
+  }
+`;
 export default function Player({ id }) {
   const ref = database.ref(`/rooms/${id}`);
-  const [roomObj, setRoomObj] = useState({});
+  const [roomName, setRoomName] = useState('');
 
   useEffect(() => {
     if (!window.YT) {
@@ -23,10 +48,8 @@ export default function Player({ id }) {
   }, []);
 
   useEffect(() => {
-    database
-      .ref(`/rooms/${id}`)
-      .once('value', (snap) => setRoomObj(snap.val()));
-  }, [id]);
+    ref.once('value', (snap) => setRoomName(snap.val().name));
+  }, [ref]);
 
   const loadVideo = () => {
     window.player = new window.YT.Player(`player`, {
@@ -86,11 +109,17 @@ export default function Player({ id }) {
   };
 
   return (
-    <div>
-      <h1>{roomObj.name}</h1>
-      <div id="player"></div>
-      <Queue />
+    <MainContainer>
+      {/* <h1>{roomName}</h1> */}
+      <Flexbox>
+        <Wrapper>
+          <Iframe>
+            <div id="player"></div>
+          </Iframe>
+        </Wrapper>
+        <Queue />
+      </Flexbox>
       <UserList />
-    </div>
+    </MainContainer>
   );
 }
