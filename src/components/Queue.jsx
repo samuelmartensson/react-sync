@@ -85,6 +85,13 @@ const ButtonWrap = styled.div`
     border: none;
     padding: 1rem;
     border-radius: 0.25rem;
+    transition-duration: 80ms;
+    cursor: pointer;
+    font-weight: bold;
+    &:hover {
+      box-shadow: 3px 3px 0px #0c3861;
+      transform: translate(-3px, -3px);
+    }
   }
 `;
 
