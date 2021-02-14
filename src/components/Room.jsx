@@ -1,35 +1,38 @@
-import React, { useState, createContext, useEffect } from 'react';
-import { useParams, useHistory } from 'react-router-dom';
-import fire, { database, signInWithGoogle } from '../firebase';
-import Player from './Player';
-import styled from 'styled-components';
-import { GenericButton } from '../utils/genericStyles';
+import React, { useState, createContext, useEffect } from "react";
+import { useParams, useHistory } from "react-router-dom";
+import fire, { database, signInWithGoogle } from "../firebase";
+import Player from "./Player";
+import styled from "styled-components";
+import { GenericButton } from "../utils/genericStyles";
+import Loader from "./Loader";
 
 export const RoomContext = createContext();
 
 const Room = () => {
-  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
   const [user, setUser] = useState(null);
   const [userId, setUserId] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [validate, setValidate] = useState(false);
   const url = useParams();
   let history = useHistory();
 
   useEffect(() => {
-    document.title = 'Synced - Joining room';
+    document.title = "Synced - Joining room";
     // Redirect to homepage if room does not exist
-    database.ref(`/rooms/${url.id}/name`).once('value', (snap) => {
+    database.ref(`/rooms/${url.id}/name`).once("value", snap => {
       if (!snap.exists()) {
         history.push(`/`);
-        document.title = 'Synced - Home';
+        document.title = "Synced - Home";
       }
+      setLoading(false);
     });
   }, [history, url.id]);
 
   useEffect(() => {
     // Auth state
-    const unsubscribe = fire.auth().onAuthStateChanged((user) => {
+    const unsubscribe = fire.auth().onAuthStateChanged(user => {
       if (user) {
         setUser(user);
       } else {
@@ -50,17 +53,25 @@ const Room = () => {
         .push({ name: user ? user.displayName : name });
       setUserId(userRef.key);
     } else {
-      setError('Name must be 3 or more characters');
+      setError("Name must be 3 or more characters");
     }
   }
   function googleSignIn() {
-    signInWithGoogle().catch((error) => {
+    signInWithGoogle().catch(error => {
       setError(error.message);
     });
   }
   function signOut() {
     fire.auth().signOut();
   }
+
+  if (loading)
+    return (
+      <Container>
+        <Loader />
+      </Container>
+    );
+
   return (
     <Container>
       {!validate ? (
@@ -77,11 +88,8 @@ const Room = () => {
                 <div className="or">or...</div>
                 <NameSignInForm>
                   <h3>Identify with a name</h3>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                  <div style={{ color: 'red' }}>{error && error}</div>
+                  <input value={name} onChange={e => setName(e.target.value)} />
+                  <div style={{ color: "red" }}>{error && error}</div>
                 </NameSignInForm>
               </>
             ) : (

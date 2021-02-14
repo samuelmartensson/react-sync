@@ -1,30 +1,30 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { database } from '../firebase';
-import Queue from './Queue';
-import UserList from './UserList';
-import styled from 'styled-components';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPause, faPlay } from '@fortawesome/free-solid-svg-icons';
+import React, { useEffect, useRef, useState } from "react";
+import { database } from "../firebase";
+import Queue from "./Queue";
+import UserList from "./UserList";
+import styled from "styled-components";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPause, faPlay } from "@fortawesome/free-solid-svg-icons";
 
 export default function Player({ id }) {
   const ref = database.ref(`/rooms/${id}`);
-  const [roomName, setRoomName] = useState('');
-  const [currentTime, setCurrentTime] = useState('');
-  const [indicatorTime, setIndicatorTime] = useState('');
+  const barWidthPercentage = 0.97;
+  const [currentTime, setCurrentTime] = useState("");
+  const [indicatorTime, setIndicatorTime] = useState("");
   const [playerState, setPlayerState] = useState(1);
-  const [isControlsHovered, setIsControlsHovered] = useState('fade');
+  const [isControlsHovered, setIsControlsHovered] = useState("fade");
   const toolTipRef = useRef();
   const indicatorRef = useRef();
   const controlsRef = useRef();
 
   useEffect(() => {
     if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
 
       window.onYouTubeIframeAPIReady = loadVideo;
 
-      const firstScriptTag = document.getElementsByTagName('script')[0];
+      const firstScriptTag = document.getElementsByTagName("script")[0];
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     } else {
       loadVideo();
@@ -33,21 +33,20 @@ export default function Player({ id }) {
   }, []);
 
   useEffect(() => {
-    ref.once('value', (snap) => {
+    ref.once("value", snap => {
       const name = snap.val().name;
       document.title = `Synced - ${name}`;
-
-      setRoomName(name);
     });
   }, [ref]);
 
   useEffect(() => {
     setInterval(() => {
       try {
-        const video = document.querySelector('#player');
+        const video = document.querySelector("#player");
         let time =
           (window.player.getCurrentTime() / window.player.getDuration()) *
-          video.clientWidth;
+          video.clientWidth *
+          barWidthPercentage;
         let hhmmss = new Date(window.player.getCurrentTime() * 1000)
           .toISOString()
           .substr(14, 5);
@@ -56,7 +55,7 @@ export default function Player({ id }) {
           indicatorRef.current.style = `width: ${time}px; top: 50%;`;
         }
       } catch (err) {
-        console.log('Video loading...');
+        console.log("Video loading...");
       }
     }, 1000);
   }, []);
@@ -64,14 +63,14 @@ export default function Player({ id }) {
   function loadVideo() {
     window.player = new window.YT.Player(`player`, {
       // Get video ID from database
-      videoId: 'Jzfpyo-q-RM',
+      videoId: "Jzfpyo-q-RM",
       playerVars: {
-        controls: 0,
+        controls: 0
       },
       events: {
         onReady: onPlayerReady,
-        onStateChange: onPlayerStateChange,
-      },
+        onStateChange: onPlayerStateChange
+      }
     });
   }
 
@@ -79,18 +78,18 @@ export default function Player({ id }) {
     if (event.data === window.YT.PlayerState.PAUSED) {
       ref.update({
         state: 1,
-        timestamp: event.target.getCurrentTime(),
+        timestamp: event.target.getCurrentTime()
       });
     }
     if (event.data === window.YT.PlayerState.PLAYING) {
       ref.update({
-        state: 0,
+        state: 0
       });
     }
   }
 
   function onPlayPause(player) {
-    database.ref(`rooms/${id}/state`).on('value', (snap) => {
+    database.ref(`rooms/${id}/state`).on("value", snap => {
       const state = snap.val();
       if (state === 1) {
         player.pauseVideo();
@@ -102,17 +101,17 @@ export default function Player({ id }) {
     });
   }
   function onTimestampChange(player) {
-    database.ref(`rooms/${id}/timestamp`).on('value', (snap) => {
+    database.ref(`rooms/${id}/timestamp`).on("value", snap => {
       player.seekTo(snap.val());
     });
   }
   function onVideoChange(player) {
-    database.ref(`rooms/${id}/videoId`).on('value', (snap) => {
+    database.ref(`rooms/${id}/videoId`).on("value", snap => {
       player.loadVideoById(snap.val());
     });
   }
 
-  const onPlayerReady = (event) => {
+  const onPlayerReady = event => {
     onPlayPause(event.target);
     onVideoChange(event.target);
     onTimestampChange(event.target);
@@ -122,15 +121,13 @@ export default function Player({ id }) {
       let total = window.player.getDuration();
       return `${new Date(total * 1000).toISOString().substr(14, 5)}`;
     } catch {
-      console.log('Video not played yet');
+      console.log("Video not played yet");
     }
   }
   function pxlToSecs(pxl) {
-    const video = document.querySelector('#player');
-
+    const video = document.querySelector("#player");
     let videoInSecs = window.player.getDuration();
-    let percentOfVideo = pxl / (video.clientWidth * 0.97); // Must be same percentage as progress-bar css-width
-
+    let percentOfVideo = pxl / (video.clientWidth * barWidthPercentage); // Must be same percentage as progress-bar css-width
     return videoInSecs * percentOfVideo;
   }
   function moveToolTipPosition(e) {
@@ -148,24 +145,24 @@ export default function Player({ id }) {
 
   function playPause() {
     ref.update({
-      state: playerState === 1 ? 0 : 1,
+      state: playerState === 1 ? 0 : 1
     });
   }
   function seek(e) {
     let rect = e.target.getBoundingClientRect();
     let x = e.clientX - rect.left;
 
-    indicatorRef.current.style.width = x + 'px';
+    indicatorRef.current.style.width = x + "px";
 
     let time = pxlToSecs(x);
     window.player.seekTo(time);
     ref.update({
-      timestamp: time,
+      timestamp: time
     });
   }
 
   useEffect(() => {
-    if (isControlsHovered === 'fade') {
+    if (isControlsHovered === "fade") {
       const delay = setTimeout(() => {
         setIsControlsHovered(false);
       }, 3000);
@@ -182,12 +179,12 @@ export default function Player({ id }) {
         <Wrapper>
           <Iframe
             onClick={playPause}
-            onMouseMove={() => setIsControlsHovered('fade')}
+            onMouseMove={() => setIsControlsHovered("fade")}
           >
             <div id="player"></div>
             <Controls
-              onClick={(e) => e.stopPropagation()}
-              style={{ opacity: isControlsHovered ? '1' : '0' }}
+              onClick={e => e.stopPropagation()}
+              style={{ opacity: isControlsHovered ? "1" : "0" }}
               ref={controlsRef}
             >
               <ControlsInnerWrap>
@@ -205,7 +202,7 @@ export default function Player({ id }) {
                   onClick={seek}
                   onMouseMove={moveToolTipPosition}
                   onMouseLeave={() =>
-                    (toolTipRef.current.style = 'display: none;')
+                    (toolTipRef.current.style = "display: none;")
                   }
                   className="progress-bar"
                 >
@@ -338,7 +335,7 @@ const TimeToolTip = styled.div`
   transform: translateX(-50%);
   display: none;
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     left: 50%;
     transform: translateX(-50%);

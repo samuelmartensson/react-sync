@@ -1,13 +1,13 @@
-import React, { useContext, useEffect, useState } from 'react';
-import styled from 'styled-components';
-import { database } from '../firebase';
-import { getTitle, parseURLtoYoutubeID } from '../utils/helpers';
-import { RoomContext } from './Room';
+import React, { useContext, useEffect, useState } from "react";
+import styled from "styled-components";
+import { database } from "../firebase";
+import { getTitle, parseURLtoYoutubeID } from "../utils/helpers";
+import { RoomContext } from "./Room";
 
 const Container = styled.div`
   display: grid;
   grid-template-rows: auto 1fr;
-  flex: 0 1 400px;
+  flex: 1 1 400px;
 `;
 const QueueWrapper = styled.div`
   padding: 0.75rem;
@@ -34,7 +34,7 @@ const Item = styled.div`
     }
   }
   &::after {
-    content: '';
+    content: "";
     background: linear-gradient(45deg, #70aee952, #2082dfd1);
     position: absolute;
     top: 0;
@@ -97,8 +97,8 @@ const ButtonWrap = styled.div`
 
 export default function Queue() {
   const [videoIdList, setVideoIdList] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [error, setError] = useState('');
+  const [inputValue, setInputValue] = useState("");
+  const [error, setError] = useState("");
   const { id } = useContext(RoomContext);
 
   function playNextVideo() {
@@ -107,30 +107,30 @@ export default function Queue() {
     window.player.loadVideoById(videoId);
 
     database.ref(`/rooms/${id}`).update({
-      videoId,
+      videoId
     });
     database.ref(`/rooms/${id}/queue/${queueKey}`).remove();
   }
 
   function addToQueue() {
-    setError('');
+    setError("");
     const videoId = parseURLtoYoutubeID(inputValue);
     if (videoId !== false) {
-      getTitle(videoId).then((res) => {
+      getTitle(videoId).then(res => {
         database.ref(`/rooms/${id}/queue`).push({
           title: res.items[0].snippet.title,
           videoId,
-          thumbnail: `https://img.youtube.com/vi/${videoId}/0.jpg`,
+          thumbnail: `https://img.youtube.com/vi/${videoId}/0.jpg`
         });
       });
-      setInputValue('');
+      setInputValue("");
     } else {
-      setError('Invalid URL');
+      setError("Invalid URL");
     }
   }
 
   useEffect(() => {
-    database.ref(`/rooms/${id}/queue`).on('value', (snap) => {
+    database.ref(`/rooms/${id}/queue`).on("value", snap => {
       setVideoIdList(snap.val());
     });
   }, [id]);
@@ -138,8 +138,8 @@ export default function Queue() {
   useEffect(() => {
     // Keeps queue height consistent with video height
     function resize() {
-      const queue = document.querySelector('#queue');
-      const video = document.querySelector('#player').clientHeight;
+      const queue = document.querySelector("#queue");
+      const video = document.querySelector("#player").clientHeight;
       if (window.innerWidth > 1200) {
         queue.style = `height: ${video}px`;
       } else {
@@ -154,10 +154,10 @@ export default function Queue() {
       }
     }
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener("resize", resize);
 
     return () => {
-      window.removeEventListener('resize', resize);
+      window.removeEventListener("resize", resize);
     };
   }, []);
 
@@ -183,7 +183,7 @@ export default function Queue() {
         <input
           placeholder="YouTube URL..."
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={e => setInputValue(e.target.value)}
         />
         <ButtonWrap>
           <button onClick={addToQueue}>Add to queue</button>
