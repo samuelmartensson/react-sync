@@ -4,7 +4,12 @@ import Queue from "./Queue";
 import UserList from "./UserList";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPause, faPlay } from "@fortawesome/free-solid-svg-icons";
+import {
+  faPause,
+  faPlay,
+  faVolumeUp,
+  faVolumeMute
+} from "@fortawesome/free-solid-svg-icons";
 
 export default function Player({ id }) {
   const ref = database.ref(`/rooms/${id}`);
@@ -12,10 +17,14 @@ export default function Player({ id }) {
   const [currentTime, setCurrentTime] = useState("");
   const [indicatorTime, setIndicatorTime] = useState("");
   const [playerState, setPlayerState] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVolumeHovered, setIsVolumeHovered] = useState(false);
+  const [currentVolume, setCurrentVolume] = useState(100);
   const [isControlsHovered, setIsControlsHovered] = useState("fade");
   const toolTipRef = useRef();
   const indicatorRef = useRef();
   const controlsRef = useRef();
+  const volumeBarRef = useRef();
 
   useEffect(() => {
     if (!window.YT) {
@@ -59,6 +68,18 @@ export default function Player({ id }) {
       }
     }, 1000);
   }, []);
+
+  useEffect(() => {
+    if (isControlsHovered === "fade") {
+      const delay = setTimeout(() => {
+        setIsControlsHovered(false);
+      }, 3000);
+
+      return () => {
+        clearTimeout(delay);
+      };
+    }
+  }, [isControlsHovered]);
 
   function loadVideo() {
     window.player = new window.YT.Player(`player`, {
@@ -160,18 +181,37 @@ export default function Player({ id }) {
       timestamp: time
     });
   }
+  function onVolumeChange() {
+    setIsMuted(wasMuted => {
+      window.player.setVolume(wasMuted ? currentVolume : 0);
+      if (wasMuted) {
+        volumeBarRef.current.style.left = currentVolume + "%";
+      }
 
-  useEffect(() => {
-    if (isControlsHovered === "fade") {
-      const delay = setTimeout(() => {
-        setIsControlsHovered(false);
-      }, 3000);
+      return !wasMuted;
+    });
+  }
 
-      return () => {
-        clearTimeout(delay);
-      };
+  function onVolumeHover() {
+    setIsVolumeHovered(true);
+  }
+  function onVolumeHoverOut() {
+    setIsVolumeHovered(false);
+  }
+  function setVolume(e) {
+    setIsMuted(false);
+    let rect = e.target.getBoundingClientRect();
+    let x = e.clientX - rect.left;
+    let volume = Math.floor((x * 100) / rect.width);
+    volumeBarRef.current.style.left = volume + "%";
+    window.player.setVolume(volume);
+    if (volume < 3) {
+      window.player.setVolume(0);
+      volumeBarRef.current.style.left = 0 + "%";
+      setIsMuted(true);
     }
-  }, [isControlsHovered]);
+    setCurrentVolume(volume);
+  }
   return (
     <MainContainer>
       {/* <h1>{roomName}</h1> */}
@@ -187,7 +227,7 @@ export default function Player({ id }) {
               style={{ opacity: isControlsHovered ? "1" : "0" }}
               ref={controlsRef}
             >
-              <ControlsInnerWrap>
+              <ControlsInnerWrap onMouseLeave={onVolumeHoverOut}>
                 <PlayPauseButton onClick={playPause}>
                   {playerState ? (
                     <FontAwesomeIcon icon={faPlay} />
@@ -195,6 +235,23 @@ export default function Player({ id }) {
                     <FontAwesomeIcon icon={faPause} />
                   )}
                 </PlayPauseButton>
+                <VolumeControls onMouseOver={onVolumeHover}>
+                  <div className="volume-btn" onClick={onVolumeChange}>
+                    {isMuted ? (
+                      <FontAwesomeIcon icon={faVolumeMute} />
+                    ) : (
+                      <FontAwesomeIcon icon={faVolumeUp} />
+                    )}
+                  </div>
+
+                  <VolumeBar
+                    isHovered={isVolumeHovered}
+                    onClick={setVolume}
+                    className="volume-bar"
+                  >
+                    <div ref={volumeBarRef} className="volume-knob"></div>
+                  </VolumeBar>
+                </VolumeControls>
                 {getVideoDuration() && (
                   <div className="progress-time">{`${currentTime} / ${getVideoDuration()}`}</div>
                 )}
@@ -225,6 +282,38 @@ export default function Player({ id }) {
   );
 }
 
+const VolumeControls = styled.div`
+  margin-left: 0.25rem;
+  display: flex;
+  align-items: center;
+  .volume-btn {
+    padding-top: 4px;
+    cursor: pointer;
+  }
+`;
+const VolumeBar = styled.div`
+  cursor: pointer;
+  opacity: ${({ isHovered }) => (isHovered ? "1" : "0")};
+  width: ${({ isHovered }) => (isHovered ? "65px" : "0px")};
+  height: 4px;
+  background: white;
+  margin-left: 14px;
+  position: relative;
+  transition-duration: 150ms;
+  transition-delay: ${({ isHovered }) => (isHovered ? "0ms" : "400ms")};
+
+  .volume-knob {
+    pointer-events: none;
+    height: 12px;
+    width: 12px;
+    border-radius: 12px;
+    background: white;
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translate(-50%, -50%);
+  }
+`;
 const MainContainer = styled.div``;
 const Wrapper = styled.div`
   width: 100%;
@@ -242,7 +331,7 @@ const Controls = styled.div`
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 40px;
+  height: 37px;
   width: 100%;
   background: linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
   opacity: 0;
@@ -278,7 +367,7 @@ const ControlsInnerWrap = styled.div`
       position: absolute;
       bottom: 0;
       width: 100%;
-      height: 5px;
+      height: 3px;
       background: #b3a3a3bb;
       transition-duration: 120ms;
     }
@@ -293,7 +382,12 @@ const ControlsInnerWrap = styled.div`
     pointer-events: none;
   }
   .progress-time {
-    margin-left: 1rem;
+    margin-left: 0.85rem;
+  }
+  svg {
+    color: white;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
   }
 `;
 
@@ -304,11 +398,7 @@ const PlayPauseButton = styled.button`
   border: none;
   cursor: pointer;
   outline: none;
-  svg {
-    color: white;
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-  }
+  padding-top: 4px;
 `;
 const Iframe = styled.div`
   position: relative;
