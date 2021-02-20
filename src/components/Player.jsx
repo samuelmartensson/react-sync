@@ -18,6 +18,7 @@ export default function Player({ id }) {
   const [indicatorTime, setIndicatorTime] = useState("");
   const [playerState, setPlayerState] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [isVolumeHovered, setIsVolumeHovered] = useState(false);
   const [currentVolume, setCurrentVolume] = useState(100);
   const [isControlsHovered, setIsControlsHovered] = useState("fade");
@@ -199,18 +200,21 @@ export default function Player({ id }) {
     setIsVolumeHovered(false);
   }
   function setVolume(e) {
-    setIsMuted(false);
-    let rect = e.target.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let volume = Math.floor((x * 100) / rect.width);
-    volumeBarRef.current.style.left = volume + "%";
-    window.player.setVolume(volume);
-    if (volume < 3) {
-      window.player.setVolume(0);
-      volumeBarRef.current.style.left = 0 + "%";
-      setIsMuted(true);
+    if (isDragging) {
+      setIsMuted(false);
+      setIsDragging(true);
+      let rect = e.target.getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      let volume = Math.floor((x * 100) / rect.width);
+      volumeBarRef.current.style.left = volume + "%";
+      window.player.setVolume(volume);
+      if (volume < 3) {
+        window.player.setVolume(0);
+        volumeBarRef.current.style.left = 0 + "%";
+        setIsMuted(true);
+      }
+      setCurrentVolume(volume);
     }
-    setCurrentVolume(volume);
   }
   return (
     <MainContainer>
@@ -246,7 +250,10 @@ export default function Player({ id }) {
 
                   <VolumeBar
                     isHovered={isVolumeHovered}
-                    onClick={setVolume}
+                    onMouseMove={setVolume}
+                    onMouseDown={() => setIsDragging(true)}
+                    onMouseUp={() => setIsDragging(false)}
+                    onMouseLeave={() => setIsDragging(false)}
                     className="volume-bar"
                   >
                     <div ref={volumeBarRef} className="volume-knob"></div>
