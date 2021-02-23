@@ -120,7 +120,7 @@ export default function Queue() {
         database.ref(`/rooms/${id}/queue`).push({
           title: res.items[0].snippet.title,
           videoId,
-          thumbnail: `https://img.youtube.com/vi/${videoId}/0.jpg`
+          thumbnail: res.items[0].snippet.thumbnails.standard.url
         });
       });
       setInputValue("");
